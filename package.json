@@ -1,0 +1,12 @@
+{
+  "name": "pg-manager",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Cloud-ready PG (paying guest) management system",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install --omit=dev",
+    "start": "npm --prefix backend start",
+    "test": "npm --prefix backend install && npm --prefix backend test",
+    "demo": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install && npm --prefix backend run demo"
+  }
+}
