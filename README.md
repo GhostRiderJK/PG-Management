@@ -29,9 +29,11 @@ A full-stack, cloud-deployable management system for a Paying Guest (PG) house. 
 | Tests | Node test runner, 15 API tests on an in-memory Postgres (`pg-mem`) |
 | Cloud | AWS EC2 + Nginx + PM2, AWS RDS PostgreSQL, Let's Encrypt HTTPS (or Docker, Render, Railway) |
 
-```
-Browser --HTTPS--> Nginx --> Node/Express (API + React build) --> PostgreSQL
-```
+## System architecture
+
+![PG Manager system architecture](docs/system-architecture.svg)
+
+The diagram maps the browser UI through the reverse proxy and Express application to PostgreSQL. It also highlights the local Vite proxy, the in-memory `pg-mem` demo/test mode, and the documented AWS and Docker deployment paths.
 
 ## Security measures
 | Area | What is done | Where |
