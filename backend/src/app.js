@@ -6,12 +6,15 @@ const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const { ZodError } = require("zod");
 const { csrfGuard } = require("./middleware/auth");
+const { query } = require("./db");
 
 function createApp() {
   const https = process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false";
   const app = express();
   app.disable("x-powered-by");
-  app.set("trust proxy", 1); // running behind Nginx / a cloud load balancer
+  // Direct inbound application traffic is restricted to the ALB security group.
+  // With the ALB as the one trusted reverse-proxy hop, this preserves client IPs.
+  app.set("trust proxy", 1);
 
   app.use(helmet({
     contentSecurityPolicy: {
@@ -36,7 +39,16 @@ function createApp() {
   app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false, message: { error: "Too many requests. Slow down." } }));
   app.use("/api", csrfGuard);
 
+  // Liveness check: confirms the Node process can respond.
   app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+  // Readiness check for ALB: do not send traffic here if PostgreSQL is unavailable.
+  app.get("/api/ready", (req, res) => {
+    query("SELECT 1")
+      .then(() => res.json({ ok: true, database: "ok" }))
+      .catch(() => res.status(503).json({ ok: false, database: "unavailable" }));
+  });
+
   app.use("/api/auth", require("./routes/auth"));
   app.use("/api/rooms", require("./routes/rooms"));
   app.use("/api/tenants", require("./routes/tenants"));
@@ -48,7 +60,7 @@ function createApp() {
   app.use("/api/audit", require("./routes/audit"));
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found" }));
 
-  // Serve the built React app from the same server (one URL, one origin, no CORS)
+  // Serve the built React app from the same server (one URL, one origin, no CORS).
   const dist = path.join(__dirname, "..", "..", "frontend", "dist");
   if (fs.existsSync(dist)) {
     app.use(express.static(dist, { maxAge: "1h", index: false }));
