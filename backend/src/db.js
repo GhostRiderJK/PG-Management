@@ -3,20 +3,31 @@ const path = require("path");
 const { Pool } = require("pg");
 
 let pool;
+
 function getPool() {
   if (pool) return pool;
+
   if (process.env.USE_PG_MEM === "1") {
     // In-memory Postgres emulator: used for tests and the no-install demo mode.
     const { newDb } = require("pg-mem");
     const { Pool: MemPool } = newDb().adapters.createPg();
     pool = new MemPool();
   } else {
+    let ssl;
+    if (process.env.DB_SSL === "true") {
+      ssl = { rejectUnauthorized: true };
+      if (process.env.DB_SSL_CA) {
+        ssl.ca = fs.readFileSync(process.env.DB_SSL_CA, "utf8");
+      }
+    }
+
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined,
+      ssl,
       max: 10,
     });
   }
+
   return pool;
 }
 
