@@ -1,4 +1,4 @@
-# One-command local run:  docker compose up --build   ->  http://localhost:5000
+# One-command local run: docker compose up --build -> http://localhost:5000
 services:
   db:
     image: postgres:16-alpine
@@ -16,10 +16,12 @@ services:
       db: { condition: service_healthy }
     ports: ["5000:5000"]
     environment:
+      NODE_ENV: development
+      AUTO_INIT_DB: "true"
       DATABASE_URL: postgresql://postgres:password@db:5432/pgmanager
       JWT_SECRET: change-this-to-a-long-random-string-before-real-use
       ADMIN_EMAIL: admin@pg.local
       ADMIN_PASSWORD: Admin@12345
-      COOKIE_SECURE: "false"   # plain http on localhost
+      COOKIE_SECURE: "false"
 volumes:
   pgdata:
