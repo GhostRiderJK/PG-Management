@@ -10,6 +10,11 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache ca-certificates wget \
+  && wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+     -O /etc/ssl/certs/rds-global-bundle.pem \
+  && chmod 644 /etc/ssl/certs/rds-global-bundle.pem
+ENV DB_SSL_CA=/etc/ssl/certs/rds-global-bundle.pem
 COPY backend/package*.json backend/
 RUN cd backend && npm ci --omit=dev
 COPY backend/ backend/
