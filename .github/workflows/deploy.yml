@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t pg-manager:${{ github.sha }} .
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            mkdir -p "${{ secrets.APP_DIR }}"
+            cd "${{ secrets.APP_DIR }}"
+            git fetch origin --all
+            git checkout main
+            git pull --ff-only origin main
+            npm run build
+            if pm2 show pg-manager >/dev/null 2>&1; then
+              pm2 restart pg-manager
+            else
+              pm2 start ecosystem.config.cjs --name pg-manager
+            fi
+            pm2 save
